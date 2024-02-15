@@ -1,21 +1,3 @@
-"""
-_handshake.py
-websocket - WebSocket client library for Python
-
-Copyright 2022 engn33r
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
 import hashlib
 import hmac
 import os
@@ -28,16 +10,11 @@ from ._logging import *
 from ._socket import *
 
 __all__ = ["handshake_response", "handshake", "SUPPORTED_REDIRECT_STATUSES"]
-
-# websocket supported version.
 VERSION = 13
-
 SUPPORTED_REDIRECT_STATUSES = (HTTPStatus.MOVED_PERMANENTLY, HTTPStatus.FOUND, HTTPStatus.SEE_OTHER,)
 SUCCESS_STATUSES = SUPPORTED_REDIRECT_STATUSES + (HTTPStatus.SWITCHING_PROTOCOLS,)
 
 CookieJar = SimpleCookieJar()
-
-
 class handshake_response:
 
     def __init__(self, status, headers, subprotocol):
@@ -65,7 +42,6 @@ def handshake(sock, url, hostname, port, resource, **options):
 
 
 def _pack_hostname(hostname):
-    # IPv6 address
     if ':' in hostname:
         return '[' + hostname + ']'
 
@@ -85,9 +61,6 @@ def _get_handshake_headers(resource, url, host, port, options):
         headers.append("Host: %s" % options["host"])
     else:
         headers.append("Host: %s" % hostport)
-
-    # scheme indicates whether http or https is used in Origin
-    # The same approach is used in parse_url of _url.py to set default port
     scheme, url = url.split(":", 1)
     if "suppress_origin" not in options or not options["suppress_origin"]:
         if "origin" in options and options["origin"] is not None:
@@ -98,8 +71,6 @@ def _get_handshake_headers(resource, url, host, port, options):
             headers.append("Origin: http://%s" % hostport)
 
     key = _create_sec_websocket_key()
-
-    # Append Sec-WebSocket-Key & Sec-WebSocket-Version if not manually specified
     if 'header' not in options or 'Sec-WebSocket-Key' not in options['header']:
         key = _create_sec_websocket_key()
         headers.append("Sec-WebSocket-Key: %s" % key)
