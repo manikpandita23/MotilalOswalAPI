@@ -15,14 +15,13 @@ SUPPORTED_REDIRECT_STATUSES = (HTTPStatus.MOVED_PERMANENTLY, HTTPStatus.FOUND, H
 SUCCESS_STATUSES = SUPPORTED_REDIRECT_STATUSES + (HTTPStatus.SWITCHING_PROTOCOLS,)
 
 CookieJar = SimpleCookieJar()
-class handshake_response:
 
+class handshake_response:
     def __init__(self, status, headers, subprotocol):
         self.status = status
         self.headers = headers
         self.subprotocol = subprotocol
         CookieJar.add(headers.get("set-cookie"))
-
 
 def handshake(sock, url, hostname, port, resource, **options):
     headers, key = _get_handshake_headers(resource, url, hostname, port, options)
@@ -40,13 +39,10 @@ def handshake(sock, url, hostname, port, resource, **options):
 
     return handshake_response(status, resp, subproto)
 
-
 def _pack_hostname(hostname):
     if ':' in hostname:
         return '[' + hostname + ']'
-
     return hostname
-
 
 def _get_handshake_headers(resource, url, host, port, options):
     headers = [
@@ -112,19 +108,16 @@ def _get_handshake_headers(resource, url, host, port, options):
 
     return headers, key
 
-
 def _get_resp_headers(sock, success_statuses=SUCCESS_STATUSES):
     status, resp_headers, status_message = read_headers(sock)
     if status not in success_statuses:
         raise WebSocketBadStatusException("Handshake status %d %s", status, status_message, resp_headers)
     return status, resp_headers
 
-
 _HEADERS_TO_CHECK = {
     "upgrade": "websocket",
     "connection": "upgrade",
 }
-
 
 def _validate(headers, key, subprotocols):
     subproto = None
@@ -160,7 +153,9 @@ def _validate(headers, key, subprotocols):
     else:
         return False, None
 
-
 def _create_sec_websocket_key():
     randomness = os.urandom(16)
     return base64encode(randomness).decode('utf-8').strip()
+
+def _generate_nonce():
+    return base64encode(os.urandom(16)).decode('utf-8').strip()
