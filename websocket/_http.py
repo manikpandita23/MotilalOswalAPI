@@ -1,24 +1,21 @@
 import errno
 import os
 import socket
-import sys
+import ssl
+from base64 import encodebytes as base64encode
 
 from ._exceptions import *
 from ._logging import *
-from ._socket import*
-from ._ssl_compat import *
+from ._socket import *
 from ._url import *
-
-from base64 import encodebytes as base64encode
 
 __all__ = ["proxy_info", "connect", "read_headers"]
 
 try:
     from python_socks.sync import Proxy
-    from python_socks._errors import *
     from python_socks._types import ProxyType
     HAVE_PYTHON_SOCKS = True
-except:
+except ImportError:
     HAVE_PYTHON_SOCKS = False
 
     class ProxyError(Exception):
@@ -31,8 +28,13 @@ except:
         pass
 
 
-class proxy_info:
+DEFAULT_SOCKET_OPTION = [
+    (socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1),
+    (socket.IPPROTO_TCP, socket.TCP_NODELAY, 1),
+]
 
+
+class proxy_info:
     def __init__(self, **options):
         self.proxy_host = options.get("http_proxy_host", None)
         if self.proxy_host:
@@ -62,7 +64,6 @@ def _start_proxied_socket(url, options, proxy):
     if proxy.proxy_protocol == "socks4":
         rdns = False
         proxy_type = ProxyType.SOCKS4
-    # socks5h and socks4a send DNS through proxy
     if proxy.proxy_protocol == "socks5h":
         rdns = True
         proxy_type = ProxyType.SOCKS5
@@ -88,23 +89,19 @@ def _start_proxied_socket(url, options, proxy):
     return sock, (hostname, port, resource)
 
 
-def connect(url, options, proxy, socket):
-    # Use _start_proxied_socket() only for socks4 or socks5 proxy
-    # Use _tunnel() for http proxy
-    # TODO: Use python-socks for http protocol also, to standardize flow
-    if proxy.proxy_host and not socket and not (proxy.proxy_protocol == "http"):
+def connect(url, options, proxy, custom_socket=None):
+    if proxy.proxy_host and not custom_socket and not (proxy.proxy_protocol == "http"):
         return _start_proxied_socket(url, options, proxy)
 
     hostname, port, resource, is_secure = parse_url(url)
 
-    if socket:
-        return socket, (hostname, port, resource)
+    if custom_socket:
+        return custom_socket, (hostname, port, resource)
 
     addrinfo_list, need_tunnel, auth = _get_addrinfo_list(
         hostname, port, is_secure, proxy)
     if not addrinfo_list:
-        raise WebSocketException(
-            "Host not found.: " + hostname + ":" + str(port))
+        raise WebSocketException("Host not found: {}:{}".format(hostname, port))
 
     sock = None
     try:
@@ -119,29 +116,22 @@ def connect(url, options, proxy, socket):
                 raise WebSocketException("SSL not available.")
 
         return sock, (hostname, port, resource)
-    except:
+    except Exception as e:
         if sock:
             sock.close()
-        raise
+        raise WebSocketException(str(e))
 
 
 def _get_addrinfo_list(hostname, port, is_secure, proxy):
     phost, pport, pauth = get_proxy_info(
         hostname, is_secure, proxy.proxy_host, proxy.proxy_port, proxy.auth, proxy.no_proxy)
     try:
-        # when running on windows 10, getaddrinfo without socktype returns a socktype 0.
-        # This generates an error exception: `_on_error: exception Socket type must be stream or datagram, not 0`
-        # or `OSError: [Errno 22] Invalid argument` when creating socket. Force the socket type to SOCK_STREAM.
         if not phost:
             addrinfo_list = socket.getaddrinfo(
                 hostname, port, 0, socket.SOCK_STREAM, socket.SOL_TCP)
             return addrinfo_list, False, None
         else:
             pport = pport and pport or 80
-            # when running on windows 10, the getaddrinfo used above
-            # returns a socktype 0. This generates an error exception:
-            # _on_error: exception Socket type must be stream or datagram, not 0
-            # Force the socket type to SOCK_STREAM
             addrinfo_list = socket.getaddrinfo(phost, pport, 0, socket.SOCK_STREAM, socket.SOL_TCP)
             return addrinfo_list, True, pauth
     except socket.gaierror as e:
@@ -166,10 +156,7 @@ def _open_socket(addrinfo_list, sockopt, timeout):
                 sock.connect(address)
             except socket.error as error:
                 error.remote_ip = str(address[0])
-                try:
-                    eConnRefused = (errno.ECONNREFUSED, errno.WSAECONNREFUSED, errno.ENETUNREACH)
-                except:
-                    eConnRefused = (errno.ECONNREFUSED, errno.ENETUNREACH)
+                eConnRefused = (errno.ECONNREFUSED, errno.WSAECONNREFUSED, errno.ENETUNREACH)
                 if error.errno in eConnRefused:
                     err = error
                     continue
@@ -208,9 +195,6 @@ def _wrap_sni_socket(sock, sslopt, hostname, check_hostname):
                 sslopt.get('password', None),
             )
 
-        # Python 3.10 switch to PROTOCOL_TLS_CLIENT defaults to "cert_reqs = ssl.CERT_REQUIRED" and "check_hostname = True"
-        # If both disabled, set check_hostname before verify_mode
-        # see https://github.com/liris/websocket-client/commit/b96a2e8fa765753e82eea531adb19716b52ca3ca#commitcomment-10803153
         if sslopt.get('cert_reqs', ssl.CERT_NONE) == ssl.CERT_NONE and not sslopt.get('check_hostname', False):
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
@@ -260,7 +244,6 @@ def _tunnel(sock, host, port, auth):
     connect_header = "CONNECT %s:%d HTTP/1.1\r\n" % (host, port)
     connect_header += "Host: %s:%d\r\n" % (host, port)
 
-    # TODO: support digest auth.
     if auth and auth[0]:
         auth_str = auth[0]
         if auth[1]:
@@ -279,7 +262,7 @@ def _tunnel(sock, host, port, auth):
 
     if status != 200:
         raise WebSocketProxyException(
-            "failed CONNECT via proxy status: %r" % status)
+            "Failed CONNECT via proxy status: {}".format(status))
 
     return sock
 
@@ -297,7 +280,6 @@ def read_headers(sock):
             break
         trace(line)
         if not status:
-
             status_info = line.split(" ", 2)
             status = int(status_info[1])
             if len(status_info) > 2:
