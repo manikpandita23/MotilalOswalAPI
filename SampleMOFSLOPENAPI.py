@@ -1,24 +1,11 @@
-# Follow README.txt
-# Install Packages 
-# Run following command in terminal to install required packages :
-# pip install -r requirements.txt
-
 from MOFSLOPENAPI import MOFSLOPENAPI
-
-# You will get Your api key from website 
 ApiKey = "" 
-
-
-# userid and password is your trading account username and password
 userid = "" 
 password = ""   
 Two_FA = ""
 vendorinfo = ""
 clientcode = None 
-
-# if Your SourceId is web then pass browsername and browser version in case of Desktop you dont need to passanyting
-
-SourceID = "Desktop"            # Web,Desktop
+SourceID = "Desktop"            
 browsername = "chrome"      
 browserversion = "104"      
 totp = ""
