@@ -12,17 +12,17 @@ import wmi
 import geocoder
 
 import websocket
-# import requests
-# import json
-# import hashlib
-# import re, uuid
-# from requests import get
-# import socket
+import requests
+import json
+import hashlib
+import re, uuid
+from requests import get
+import socket
 from struct import *
-# import sys
-# import os
+import sys
+import os
 import time
-# from datetime import datetime 
+from datetime import datetime 
 import datetime as dt
 from queue import Queue
 from threading import Thread
