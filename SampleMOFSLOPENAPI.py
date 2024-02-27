@@ -34,19 +34,18 @@ Mofsl = MOFSLOPENAPI(ApiKey, Base_Url, clientcode, SourceID, browsername, browse
 print("--------------------------------Login--------------------------------")
 # Mofsl.login(userid, password)
 print(Mofsl.login(userid, password, Two_FA, totp, vendorinfo))
+print("--------------------------------verifyotp--------------------------------")
+otp = input("Enter Input: ")
+print(Mofsl.verifyotp(otp))
 
-# print("--------------------------------verifyotp--------------------------------")
-# otp = input("Enter Input: ")
-# print(Mofsl.verifyotp(otp))
-
-# print("--------------------------------resendotp--------------------------------")
-# print(Mofsl.resendotp())
+print("--------------------------------resendotp--------------------------------")
+print(Mofsl.resendotp())
 
 
 # # GetProfile response for dealer
-# print("--------------------------------GetProfile--------------------------------")
-# # Mofsl.GetProfile(clientcode)  
-# print(Mofsl.GetProfile(clientcode))
+print("--------------------------------GetProfile--------------------------------")
+Mofsl.GetProfile(clientcode)  
+print(Mofsl.GetProfile(clientcode))
 
 
 # # PlaceOrder
