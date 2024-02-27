@@ -31,7 +31,7 @@ from threading import Thread
 
 # Constant
 # Api-Version
-version = "V.1.1.0"
+#version = "V.1.1.0"
 
 # ErrorLogs
 try:
