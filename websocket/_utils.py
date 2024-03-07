@@ -1,12 +1,10 @@
 __all__ = ["NoLock", "validate_utf8", "extract_err_message", "extract_error_code"]
 class NoLock:
-
     def __enter__(self):
         pass
 
     def __exit__(self, exc_type, exc_value, traceback):
         pass
-
 
 try:
     # If wsaccel is available we use compiled routines to validate UTF-8
