@@ -10,7 +10,6 @@ from ._ssl_compat import *
 from ._url import *
 
 from base64 import encodebytes as base64encode
-
 __all__ = ["proxy_info", "connect", "read_headers"]
 
 try:
