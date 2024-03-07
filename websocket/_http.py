@@ -3,7 +3,6 @@ import errno
 import os
 import socket
 import sys
-
 from ._exceptions import *
 from ._logging import *
 from ._socket import*
