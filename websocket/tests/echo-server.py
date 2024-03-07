@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-
-# From https://github.com/aaugustin/websockets/blob/main/example/echo.py
-
 import asyncio
 import websockets
 import os
