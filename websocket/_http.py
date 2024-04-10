@@ -61,7 +61,43 @@ def _start_proxied_socket(url, options, proxy):
     if proxy.proxy_protocol == "socks4":
         rdns = False
         proxy_type = ProxyType.SOCKS4
-    # socks5h and socks4a send DNS through proxy
+    # socks5h and socks4a send DNS through proxy. This means that the server's IP address will be returned by the proxy instead of the real server
+    elif proxy.proxy_protocol == "socks4a":
+        rdns = True
+        proxy_type = ProxyType.SOCKS4
+    else:
+        rdns = True
+        proxy_type = ProxyType.HTTP
+
+    try:
+        return socket_connect(hostname, int(port), proxy.proxy_timeout, proxy_type=proxy_type, rdns=rdns,
+                              username=proxy.auth[0] if proxy.auth else None, password=proxy.auth[1] if proxy.auth
+                              username=proxy.auth[0] if proxy.auth else None, password=proxy.auth[1] if proxy.auth
+                              username=proxy.auth[0] if proxy.auth else None, password=proxy.auth[1] if proxy.auth
+                              username=proxy.auth[0] if proxy.auth else None, password=proxy.auth[1] if proxy.auth
+                              username=proxy.auth[0], password=proxy.auth[1])
+    except Exception as e:
+        errmsg = str(e).strip()
+        if "refused" in errmsg or "timed out" in errmsg:
+            raise ConnectionRefusedError(errmsg)
+        else:
+            raise WebSocketException(str(e))
+
+
+class BaseProxyConnection(WebSocketBaseClient):
+    def __init__(self, url, header=None, **kwargs):
+        super().__init__(url, header, **kwargs)
+        self._proxy = ProxyOptions(**kwargs.get('proxy', {}))
+
+    @asyncio.coroutine
+    def open(self):
+        # Connect to the proxied server instead of directly to the target server.
+        self._sock = yield from _start_proxied_socket(self.url, self._header, self._proxy)
+        self._transport = None
+        self._packetizer = Packetizer()
+        self._reader = StreamReader(self._loop, self._packetizer)
+        self._writer = StreamWriter(self._loop, self._reader, self._sock)
+        #fix
     if proxy.proxy_protocol == "socks5h":
         rdns = True
         proxy_type = ProxyType.SOCKS5
