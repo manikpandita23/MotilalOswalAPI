@@ -12,7 +12,7 @@ from base64 import encodebytes as base64encode
 __all__ = ["proxy_info", "connect", "read_headers"]
 
 try:
-    from python_socks.sync import Proxy
+    from python_socks.sync import Proxy #fix
     from python_socks._errors import *
     from python_socks._types import ProxyType
     HAVE_PYTHON_SOCKS = True
